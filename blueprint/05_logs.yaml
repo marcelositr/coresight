@@ -1,0 +1,40 @@
+module: Logs
+description: >
+  Classe que monitora logs do sistema para erros ou momentos críticos.
+  Deve ter as funções padrão: update(), format(), display().
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/logs.log.
+  Colunas alinhadas no dashboard.
+functions:
+  - name: update
+    description: Coleta novas linhas de logs críticos do sistema
+    inputs: []
+    outputs:
+      - logs_entries: list of log lines with timestamp and level
+  - name: format
+    description: Formata logs em colunas alinhadas para o dashboard
+    inputs:
+      - logs_entries
+    outputs:
+      - formatted_logs
+  - name: display
+    description: Retorna string formatada para main dashboard
+    inputs:
+      - formatted_logs
+    outputs:
+      - display_string
+inputs: []
+outputs:
+  - logs_entries
+  - formatted_logs
+  - display_string
+alerts:
+  - threshold: critical
+    action: vermelho piscando + beep
+i18n: true
+dependencies:
+  - standard library
+notes: |
+  - Classe Logs deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Salvar apenas logs críticos
+  - Colunas alinhadas para cockpit hi-tech

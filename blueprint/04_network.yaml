@@ -1,0 +1,41 @@
+module: Network
+description: >
+  Classe que coleta estatísticas de rede por interface.
+  Deve ter as funções padrão: update(), format(), display().
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/network.log.
+  Pisca em vermelho se upload/download ultrapassar thresholds definidos em config.py.
+  Colunas alinhadas no dashboard.
+functions:
+  - name: update
+    description: Coleta upload e download por interface de rede
+    inputs: []
+    outputs:
+      - interfaces: list of network interfaces with bytes_sent, bytes_recv
+  - name: format
+    description: Gera barra proporcional colorida de upload/download
+    inputs:
+      - interfaces
+    outputs:
+      - formatted_network_bar
+  - name: display
+    description: Retorna string formatada para main dashboard
+    inputs:
+      - formatted_network_bar
+    outputs:
+      - display_string
+inputs: []
+outputs:
+  - interfaces
+  - formatted_network_bar
+  - display_string
+alerts:
+  - threshold: 90
+    action: vermelho piscando + beep
+i18n: true
+dependencies:
+  - psutil
+  - standard library
+notes: |
+  - Classe Network deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Colunas alinhadas para cockpit hi-tech

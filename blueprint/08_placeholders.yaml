@@ -1,0 +1,39 @@
+module: Placeholders / Extras
+description: >
+  Arquivo de blueprint para funcionalidades futuras do CoreSight.
+  Serve como guia para adicionar novos módulos sem quebrar a estrutura existente.
+  Exemplos de extras: ping de hosts, cotação de BTC, previsão do tempo, monitoramento de apps adicionais.
+functions:
+  - name: placeholder_ping
+    description: Estrutura para coletar latência de hosts
+    inputs: []
+    outputs:
+      - ping_results
+  - name: placeholder_btc
+    description: Estrutura para coletar preço do BTC em tempo real
+    inputs: []
+    outputs:
+      - btc_price
+  - name: placeholder_weather
+    description: Estrutura para coletar previsão do tempo
+    inputs: []
+    outputs:
+      - weather_info
+  - name: placeholder_custom_app
+    description: Estrutura para monitoramento de apps adicionais
+    inputs: []
+    outputs:
+      - custom_app_data
+inputs: []
+outputs:
+  - ping_results
+  - btc_price
+  - weather_info
+  - custom_app_data
+alerts: []
+i18n: true
+dependencies: []
+notes: |
+  - Nenhuma implementação real ainda
+  - Serve apenas como guia para futuras integrações
+  - Mantém a modularidade e compatibilidade com Gemini CLI

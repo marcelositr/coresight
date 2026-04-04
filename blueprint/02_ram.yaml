@@ -1,0 +1,55 @@
+module: RAM
+description: >
+  Classe que coleta estatísticas de memória RAM e swap.
+  Deve ter as funções padrão: update(), format(), display().
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/ram.log.
+  Pisca em vermelho se ultrapassar threshold definido em config.py.
+functions:
+  - name: update
+    description: Coleta valores totais, usados e livres de RAM e swap
+    inputs: []
+    outputs:
+      - ram_total
+      - ram_used
+      - ram_free
+      - swap_total
+      - swap_used
+      - swap_free
+  - name: format
+    description: Gera barra proporcional colorida de RAM e swap
+    inputs:
+      - ram_total
+      - ram_used
+      - ram_free
+      - swap_total
+      - swap_used
+      - swap_free
+    outputs:
+      - formatted_ram_bar
+  - name: display
+    description: Retorna string formatada para main dashboard
+    inputs:
+      - formatted_ram_bar
+    outputs:
+      - display_string
+inputs: []
+outputs:
+  - ram_total
+  - ram_used
+  - ram_free
+  - swap_total
+  - swap_used
+  - swap_free
+  - formatted_ram_bar
+  - display_string
+alerts:
+  - threshold: 90
+    action: vermelho piscando + beep
+i18n: true
+dependencies:
+  - psutil
+  - standard library
+notes: |
+  - Classe RAM deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Logs internos devem ser detalhados

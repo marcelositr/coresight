@@ -1,0 +1,27 @@
+module: Estrutura Base
+description: >
+  Define a estrutura inicial do projeto CoreSight.
+  Cria pastas, arquivos de configuração, loader de i18n e utils.
+  Todos os módulos dependem desta base.
+functions:
+  - name: create_folders
+    description: Cria pastas 'modules', 'i18n', '~/.cache/CoreSight'
+  - name: init_config
+    description: Cria arquivo config.py com thresholds, cores, refresh e debug
+  - name: init_i18n_loader
+    description: Cria i18n/__init__.py para detectar locale e carregar labels
+  - name: init_utils
+    description: Cria utils.py com funções utilitárias para formatação e logs
+inputs: []
+outputs:
+  - folders_created
+  - config_initialized
+  - i18n_loader_ready
+  - utils_ready
+alerts: []
+i18n: true
+dependencies: []
+notes: |
+  - Este arquivo deve ser processado primeiro
+  - Sem código funcional ainda, apenas estrutura
+  - Gemini CLI deve criar pastas e arquivos vazios com docstrings e placeholders

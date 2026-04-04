@@ -1,0 +1,43 @@
+module: CPU
+description: >
+  Classe que coleta estatísticas de CPU por núcleo e média total.
+  Deve ter as funções padrão: update(), format(), display().
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/cpu.log.
+  Pisca em vermelho se ultrapassar threshold definido em config.py.
+functions:
+  - name: update
+    description: Coleta % de uso de cada núcleo e média total
+    inputs: []
+    outputs:
+      - cpu_percent_per_core
+      - cpu_percent_total
+  - name: format
+    description: Gera barra proporcional colorida de cada núcleo e total
+    inputs:
+      - cpu_percent_per_core
+      - cpu_percent_total
+    outputs:
+      - formatted_cpu_bar
+  - name: display
+    description: Retorna string formatada para main dashboard
+    inputs:
+      - formatted_cpu_bar
+    outputs:
+      - display_string
+inputs: []
+outputs:
+  - cpu_percent_per_core
+  - cpu_percent_total
+  - formatted_cpu_bar
+  - display_string
+alerts:
+  - threshold: 90
+    action: vermelho piscando + beep
+i18n: true
+dependencies:
+  - psutil
+  - standard library
+notes: |
+  - Classe CPU deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Logs internos devem ser detalhados

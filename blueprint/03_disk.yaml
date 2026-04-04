@@ -1,0 +1,42 @@
+module: Disco
+description: >
+  Classe que coleta estatísticas de uso de disco por mount point.
+  Deve ter as funções padrão: update(), format(), display().
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/disk.log.
+  Pisca em vermelho se algum mount ultrapassar threshold definido em config.py.
+  Colunas alinhadas no dashboard.
+functions:
+  - name: update
+    description: Coleta espaço total, usado e livre de cada mount point
+    inputs: []
+    outputs:
+      - disks: list of mount points with total, used, free, percent
+  - name: format
+    description: Gera barra proporcional colorida de cada disco
+    inputs:
+      - disks
+    outputs:
+      - formatted_disk_bar
+  - name: display
+    description: Retorna string formatada para main dashboard
+    inputs:
+      - formatted_disk_bar
+    outputs:
+      - display_string
+inputs: []
+outputs:
+  - disks
+  - formatted_disk_bar
+  - display_string
+alerts:
+  - threshold: 90
+    action: vermelho piscando + beep
+i18n: true
+dependencies:
+  - psutil
+  - standard library
+notes: |
+  - Classe Disco deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Logs internos detalhados
+  - Colunas alinhadas para melhor visualização no cockpit

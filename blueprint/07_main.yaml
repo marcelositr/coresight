@@ -1,0 +1,50 @@
+module: Main
+description: >
+  Arquivo principal que integra todos os módulos do CoreSight.
+  Cria loop de atualização de 1 segundo (configurável) e monta o dashboard full terminal.
+  Chama módulos: CPU, RAM, Disco, Network, Logs, Alerts.
+  Aplica layout TPU hi-tech, barras proporcionais, colunas alinhadas e i18n.
+functions:
+  - name: initialize_modules
+    description: Instancia todas as classes de módulos
+    inputs: []
+    outputs:
+      - cpu_instance
+      - ram_instance
+      - disk_instance
+      - network_instance
+      - logs_instance
+      - alerts_instance
+  - name: update_dashboard
+    description: Atualiza todos os módulos, aplica thresholds, formata e exibe no terminal
+    inputs:
+      - cpu_instance
+      - ram_instance
+      - disk_instance
+      - network_instance
+      - logs_instance
+      - alerts_instance
+    outputs:
+      - dashboard_string
+  - name: display_dashboard
+    description: Limpa tela e exibe dashboard formatado
+    inputs:
+      - dashboard_string
+    outputs: []
+  - name: main_loop
+    description: Executa loop de atualização contínuo com intervalo definido em config.py
+    inputs:
+      - dashboard_string
+    outputs: []
+inputs: []
+outputs:
+  - dashboard_string
+alerts: []
+i18n: true
+dependencies:
+  - standard library
+  - psutil
+notes: |
+  - Funções devem ser chamadas na ordem correta para manter dashboard consistente
+  - Debug ativável via config.py
+  - Integração total de módulos, sem inventar abstrações fora do planejado

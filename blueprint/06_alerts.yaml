@@ -1,0 +1,39 @@
+module: Alerts
+description: >
+  Classe responsável por gerenciar alertas visuais e sonoros.
+  Pisca em vermelho e emite beep quando thresholds são ultrapassados.
+  Debug configurável. Logs internos salvos em ~/.cache/CoreSight/alerts.log.
+functions:
+  - name: check_thresholds
+    description: Verifica valores de CPU, RAM, Disco e Network contra thresholds do config.py
+    inputs:
+      - cpu_percent_total
+      - ram_used
+      - swap_used
+      - disks_percent
+      - network_usage
+    outputs:
+      - alert_triggered: boolean
+  - name: display_alert
+    description: Retorna string colorida piscando para o dashboard
+    inputs:
+      - alert_triggered
+    outputs:
+      - alert_string
+  - name: sound_alert
+    description: Emite beep quando alert_triggered for True
+    inputs:
+      - alert_triggered
+    outputs: []
+inputs: []
+outputs:
+  - alert_triggered
+  - alert_string
+alerts: []
+i18n: true
+dependencies:
+  - standard library
+notes: |
+  - Classe Alerts deve ser isolada e testável separadamente
+  - Debug ativável via config.py
+  - Pisca apenas em vermelho + beep da placa-mãe
