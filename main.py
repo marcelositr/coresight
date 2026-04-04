@@ -1,6 +1,7 @@
 """
 CoreSight Main Entry Point.
-Responsive Layout with Keyboard Support (ESC and Ctrl+C).
+Professional Rendering Pipeline with Responsive Layout and Keyboard Support.
+Follows Senior Engineer standards and Blueprint 2-09.
 """
 
 import time
@@ -8,8 +9,14 @@ import sys
 import os
 import datetime
 import select
-import tty
-import termios
+try:
+    import tty
+    import termios
+    HAS_TERMIOS = True
+except ImportError:
+    HAS_TERMIOS = False
+from typing import List, Dict, Any, Optional
+
 import config
 import utils
 from i18n import labels
@@ -17,107 +24,201 @@ from i18n import labels
 # Import modules
 from modules.cpu import CPU
 from modules.ram import RAM
-from modules.disk import Disco
+from modules.disk import Disk
 from modules.network import Network
 from modules.logs import Logs
 from modules.alerts import Alerts
 
 class CoreSight:
-    def __init__(self):
-        self.initialize_modules()
-        self.running = True
-
-    def initialize_modules(self):
-        self.cpu = CPU()
-        self.ram = RAM()
-        self.disk = Disco()
-        self.network = Network()
-        self.logs = Logs()
-        self.alerts = Alerts()
-
-    def build_dashboard(self, width):
-        # 1. Update data
-        cpu_cores, cpu_total = self.cpu.update()
-        self.ram.update()
-        disks_data = self.disk.update()
-        self.network.update()
-        self.logs.update()
-
-        # 2. Alerts check
-        self.alerts.check_thresholds(
-            cpu_total=cpu_total,
-            ram_percent=self.ram.ram_percent,
-            swap_percent=self.ram.swap_percent,
-            disks_percents=[d['percent'] for d in disks_data]
-        )
-
-        # 3. Dynamic width calculation for modules
-        inner_w = width - 4
-        config.DYNAMIC_LABEL_WIDTH = max(12, int(inner_w * 0.18))
-        config.DYNAMIC_BAR_WIDTH = max(10, int(inner_w * 0.32))
-
-        output = []
-        output.append("┌" + "─" * (width - 2) + "┐")
+    """
+    Main Application Class for CoreSight Dashboard.
+    Implements a strict rendering pipeline: collect -> process -> format -> render.
+    """
+    
+    def __init__(self) -> None:
+        """
+        Initializes the application, modules, and terminal state.
+        """
+        self.module_name: str = "main"
+        self._initialize_modules()
+        self.running: bool = True
+        self.terminal_width: int = 80
+        self.terminal_height: int = 24
+        self.last_render: float = 0
         
-        header_text = f" CoreSight Dashboard v1.0 | {datetime.datetime.now().strftime('%H:%M:%S')} "
-        output.append(utils.draw_box_line(f"{config.COLORS['cyan']}{header_text}{config.COLORS['reset']}", width, "center"))
-        output.append("├" + "─" * (width - 2) + "┤")
+        # State storage for the pipeline
+        self.raw_data: Dict[str, Any] = {}
+        self.formatted_output: List[str] = []
 
-        alert_str = self.alerts.display_alert()
-        if alert_str:
-            output.append(utils.draw_box_line(alert_str, width, "center"))
-            output.append("├" + "─" * (width - 2) + "┤")
-            self.alerts.sound_alert()
+    def _initialize_modules(self) -> None:
+        """
+        Instantiates all monitoring modules.
+        """
+        try:
+            self.cpu = CPU()
+            self.ram = RAM()
+            self.disk = Disk()
+            self.network = Network()
+            self.logs = Logs()
+            self.alerts = Alerts()
+            utils.log_message(self.module_name, "Modules initialized successfully.")
+        except Exception as e:
+            utils.log_message(self.module_name, f"Failed to initialize modules: {str(e)}", "CRITICAL")
+            sys.exit(1)
 
-        def add_section(title, lines):
-            output.append(utils.draw_box_line(f"{config.COLORS['blue']}■ {title}{config.COLORS['reset']}", width))
-            for line in lines:
-                output.append(utils.draw_box_line(line, width))
-            output.append("├" + "─" * (width - 2) + "┤")
+    def collect_data(self) -> None:
+        """
+        Step 1: Mandatory Data Collection.
+        Updates all modules to gather fresh metrics.
+        """
+        try:
+            # Each update call returns data, which we store in raw_data if needed
+            self.raw_data['cpu_cores'], self.raw_data['cpu_total'] = self.cpu.update()
+            self.raw_data['ram_data'] = self.ram.update()
+            self.raw_data['disks_data'] = self.disk.update()
+            self.raw_data['network_data'] = self.network.update()
+            self.raw_data['logs_data'] = self.logs.update()
+        except Exception as e:
+            utils.log_message(self.module_name, f"Data collection error: {str(e)}", "ERROR")
 
-        add_section(labels['cpu'], self.cpu.format())
-        add_section(labels['ram'], self.ram.format())
-        add_section(labels['disk'], self.disk.format())
-        add_section(labels['network'], self.network.format())
-        add_section(labels['logs'], self.logs.format())
+    def process_data(self) -> None:
+        """
+        Step 2: Mandatory Data Processing.
+        Analyzes collected data for alerts and logic.
+        """
+        try:
+            # Check thresholds for alerts
+            self.alerts.check_thresholds(
+                cpu_total=self.raw_data.get('cpu_total', 0),
+                ram_percent=self.ram.ram_percent,
+                swap_percent=self.ram.swap_percent,
+                disks_percents=[d['percent'] for d in self.raw_data.get('disks_data', [])]
+            )
+            
+            # Update terminal size for layout calculations
+            self.terminal_width, self.terminal_height = utils.get_terminal_size()
+            
+            # Dynamic layout adjustments
+            inner_w = self.terminal_width - 4
+            config.DYNAMIC_LABEL_WIDTH = max(12, int(inner_w * 0.18))
+            config.DYNAMIC_BAR_WIDTH = max(10, int(inner_w * 0.32))
+            
+        except Exception as e:
+            utils.log_message(self.module_name, f"Data processing error: {str(e)}", "ERROR")
 
-        # FOOTER UPDATED WITH ESC
-        footer_text = " [ESC / Ctrl+C] EXIT | [DEBUG] ACTIVE " if config.DEBUG else " [ESC / Ctrl+C] EXIT "
-        output.append(utils.draw_box_line(footer_text, width, "right"))
-        output.append("└" + "─" * (width - 2) + "┘")
+    def format_output(self) -> None:
+        """
+        Step 3: Mandatory Output Formatting.
+        Prepares the visual representation of the data.
+        """
+        try:
+            w = self.terminal_width
+            lines = []
+            
+            # 1. Header and Top Border
+            lines.append("┌" + "─" * (w - 2) + "┐")
+            header_text = f" CoreSight Dashboard v1.1 | {datetime.datetime.now().strftime('%H:%M:%S')} "
+            lines.append(utils.draw_box_line(f"{config.COLORS['cyan']}{header_text}{config.COLORS['reset']}", w, "center"))
+            lines.append("├" + "─" * (w - 2) + "┤")
 
-        return "\n".join(output)
+            # 2. Alerts Section (Dynamic)
+            alert_str = self.alerts.display_alert()
+            if alert_str:
+                lines.append(utils.draw_box_line(alert_str, w, "center"))
+                lines.append("├" + "─" * (w - 2) + "┤")
+                self.alerts.sound_alert()
 
-    def main_loop(self):
+            # 3. Main Content Sections
+            sections = [
+                (labels['cpu'], self.cpu.format()),
+                (labels['ram'], self.ram.format()),
+                (labels['disk'], self.disk.format()),
+                (labels['network'], self.network.format()),
+                (labels['logs'], self.logs.format())
+            ]
+
+            for title, section_lines in sections:
+                lines.append(utils.draw_box_line(f"{config.COLORS['blue']}■ {title}{config.COLORS['reset']}", w))
+                for line in section_lines:
+                    lines.append(utils.draw_box_line(line, w))
+                lines.append("├" + "─" * (w - 2) + "┤")
+
+            # 4. Footer and Bottom Border
+            footer_text = " [ESC / Ctrl+C] EXIT | [DEBUG] ACTIVE " if config.DEBUG else " [ESC / Ctrl+C] EXIT "
+            lines.append(utils.draw_box_line(footer_text, w, "right"))
+            lines.append("└" + "─" * (w - 2) + "┘")
+            
+            self.formatted_output = lines
+            
+        except Exception as e:
+            utils.log_message(self.module_name, f"Output formatting error: {str(e)}", "ERROR")
+            self.formatted_output = ["Error formatting dashboard output."]
+
+    def render_screen(self) -> None:
+        """
+        Step 4: Mandatory Screen Rendering.
+        Displays the formatted dashboard to the terminal.
+        """
+        try:
+            utils.clear_screen()
+            dashboard_str = "\n".join(self.formatted_output)
+            sys.stdout.write(dashboard_str)
+            sys.stdout.flush()
+        except Exception as e:
+            utils.log_message(self.module_name, f"Render error: {str(e)}", "ERROR")
+
+    def run(self) -> None:
+        """
+        Executes the main application loop with professional terminal handling.
+        """
         # Save terminal settings to restore later
         fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        
+        old_settings = None
+        if HAS_TERMIOS:
+            try:
+                old_settings = termios.tcgetattr(fd)
+                # Set terminal to cbreak mode (capture keys without Enter)
+                tty.setcbreak(fd)
+            except (termios.error, Exception):
+                old_settings = None
+
         try:
-            # Set terminal to cbreak mode (capture keys without Enter)
-            tty.setcbreak(fd)
+            utils.log_message(self.module_name, "Application started.")
             
             while self.running:
-                w, h = utils.get_terminal_size()
-                dashboard = self.build_dashboard(w)
-                utils.clear_screen()
-                sys.stdout.write(dashboard)
-                sys.stdout.flush()
+                # Execute Pipeline
+                self.collect_data()
+                self.process_data()
+                self.format_output()
+                self.render_screen()
                 
-                # Check for keyboard input with a timeout (replaces time.sleep)
-                if select.select([sys.stdin], [], [], config.REFRESH_INTERVAL)[0]:
-                    char = sys.stdin.read(1)
-                    if char == '\x1b': # ESC key hex code
-                        self.running = False
+                # Check for keyboard input with a timeout
+                # select() allows us to wait for REFRESH_INTERVAL or a key press
+                if HAS_TERMIOS:
+                    if select.select([sys.stdin], [], [], config.REFRESH_INTERVAL)[0]:
+                        char = sys.stdin.read(1)
+                        if char == '\x1b' or char == '\x03': # ESC (\x1b) or Ctrl+C (\x03)
+                            self.running = False
+                else:
+                    # Fallback for Windows or non-TTY
+                    time.sleep(config.REFRESH_INTERVAL)
                         
         except KeyboardInterrupt:
             self.running = False
+        except Exception as e:
+            utils.log_message(self.module_name, f"Fatal error in main loop: {str(e)}", "CRITICAL")
         finally:
             # Restore terminal settings
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            if HAS_TERMIOS and old_settings:
+                try:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                except (termios.error, Exception):
+                    pass
+            
             utils.clear_screen()
             print(f"{config.COLORS['green']}CoreSight shutdown gracefully.{config.COLORS['reset']}")
+            utils.log_message(self.module_name, "Application shutdown.")
 
 if __name__ == "__main__":
     app = CoreSight()
-    app.main_loop()
+    app.run()

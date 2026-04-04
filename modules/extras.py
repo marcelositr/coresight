@@ -1,21 +1,28 @@
 """
 Extras and Placeholders Module for CoreSight.
+Follows Senior Engineer standards with mandatory contract and type safety.
 This file serves as a template for future modules (Ping, BTC, Weather, etc.)
-to ensure they follow the CoreSight architecture.
 """
 
+from typing import List, Dict, Any
 import config
 import utils
 from i18n import labels
 
 class Extras:
-    def __init__(self):
-        self.module_name = "extras"
-        self.ping_results = "N/A"
-        self.btc_price = "N/A"
-        self.weather_info = "N/A"
+    """
+    Template for future modules. Handles placeholder metrics.
+    """
+    def __init__(self) -> None:
+        """
+        Initializes the Extras module with default state.
+        """
+        self.module_name: str = "extras"
+        self.ping_results: str = "N/A"
+        self.btc_price: str = "N/A"
+        self.weather_info: str = "N/A"
 
-    def placeholder_ping(self):
+    def placeholder_ping(self) -> str:
         """
         Structure for collecting host latency.
         """
@@ -23,7 +30,7 @@ class Extras:
         self.ping_results = "8.8.8.8: 15ms"
         return self.ping_results
 
-    def placeholder_btc(self):
+    def placeholder_btc(self) -> str:
         """
         Structure for collecting real-time BTC price.
         """
@@ -31,7 +38,7 @@ class Extras:
         self.btc_price = "$ 65,000.00"
         return self.btc_price
 
-    def placeholder_weather(self):
+    def placeholder_weather(self) -> str:
         """
         Structure for collecting weather information.
         """
@@ -39,33 +46,58 @@ class Extras:
         self.weather_info = "24°C, Sunny"
         return self.weather_info
 
-    def placeholder_custom_app(self):
+    def placeholder_custom_app(self) -> str:
         """
         Structure for monitoring additional apps (Docker, Nginx, etc.)
         """
         return "Custom App: Running"
 
-    def update(self):
+    def update(self) -> None:
         """
         Standard update method for consistency.
+        In the future, this would call the specific placeholders.
         """
-        # In the future, this would call the specific placeholders
-        utils.log_message(self.module_name, "Placeholder update called.", level="DEBUG")
-        pass
+        try:
+            utils.log_message(self.module_name, "Placeholder update called.", level="DEBUG")
+            # Simulation of data collection
+            self.placeholder_ping()
+            self.placeholder_btc()
+            self.placeholder_weather()
+        except Exception as e:
+            utils.log_message(self.module_name, f"Error updating extras: {str(e)}", level="ERROR")
 
-    def display(self):
+    def get_data(self) -> Dict[str, Any]:
         """
-        Standard display method for consistency.
+        Returns the current internal state of extras.
+        
+        Returns:
+            Dict[str, Any]: Placeholder data.
         """
-        # Example of how these extras would look in the dashboard
+        return {
+            "ping": self.ping_results,
+            "btc": self.btc_price,
+            "weather": self.weather_info
+        }
+
+    def format(self) -> List[str]:
+        """
+        Formats extras into a list of strings for dashboard display.
+        
+        Returns:
+            List[str]: Formatted lines of text.
+        """
         lines = [
-            f"Ping: {self.placeholder_ping()}",
-            f"BTC:  {self.placeholder_btc()}",
-            f"Weather: {self.placeholder_weather()}"
+            f"Ping:    {self.ping_results}",
+            f"BTC:     {self.btc_price}",
+            f"Weather: {self.weather_info}"
         ]
-        return "\n".join(lines)
+        return lines
 
-if __name__ == "__main__":
-    extras = Extras()
-    print("CoreSight Extras Placeholders:")
-    print(extras.display())
+    def display(self) -> str:
+        """
+        Returns the final string representation for the Extras module.
+        
+        Returns:
+            str: All formatted lines joined by newlines.
+        """
+        return "\n".join(self.format())

@@ -1,51 +1,81 @@
 """
 Alerts Management Module for CoreSight.
-Handles visual and sound alerts when system thresholds are exceeded.
+Follows Senior Engineer standards with mandatory contract and type safety.
 """
 
+from typing import List, Dict, Any, Optional
 import sys
 import config
 import utils
 from i18n import labels
 
 class Alerts:
-    def __init__(self):
-        self.alert_triggered = False
-        self.triggering_modules = []
-        self.module_name = "alerts"
+    """
+    Handles visual and sound alerts when system thresholds are exceeded.
+    """
+    def __init__(self) -> None:
+        """
+        Initializes the Alerts module with default state.
+        """
+        self.alert_triggered: bool = False
+        self.triggering_modules: List[str] = []
+        self.module_name: str = "alerts"
 
-    def check_thresholds(self, cpu_total, ram_percent, swap_percent, disks_percents, network_usage=0):
+    def update(self) -> bool:
+        """
+        Standard update method. For Alerts, this might not do much 
+        as it depends on external data passed to check_thresholds.
+        
+        Returns:
+            bool: Current alert status.
+        """
+        return self.alert_triggered
+
+    def check_thresholds(self, 
+                         cpu_total: float, 
+                         ram_percent: float, 
+                         swap_percent: float, 
+                         disks_percents: List[float], 
+                         network_usage: float = 0.0) -> bool:
         """
         Checks current values against thresholds defined in config.py.
+        Logs warnings when thresholds are exceeded.
+        
+        Args:
+            cpu_total: Total CPU usage percentage.
+            ram_percent: RAM usage percentage.
+            swap_percent: Swap usage percentage.
+            disks_percents: List of disk usage percentages.
+            network_usage: Network usage metric (reserved for future use).
+            
+        Returns:
+            bool: True if any threshold is exceeded, False otherwise.
         """
         try:
             self.alert_triggered = False
             self.triggering_modules = []
             
             # Check CPU
-            if cpu_total >= config.THRESHOLDS.get("cpu", 90):
+            if cpu_total >= config.THRESHOLDS.get("cpu", 90.0):
                 self.alert_triggered = True
                 self.triggering_modules.append("CPU")
             
             # Check RAM
-            if ram_percent >= config.THRESHOLDS.get("ram", 90):
+            if ram_percent >= config.THRESHOLDS.get("ram", 90.0):
                 self.alert_triggered = True
                 self.triggering_modules.append("RAM")
 
             # Check Swap (using same RAM threshold or specific if added)
-            if swap_percent >= config.THRESHOLDS.get("ram", 90):
+            if swap_percent >= config.THRESHOLDS.get("ram", 90.0):
                 self.alert_triggered = True
                 self.triggering_modules.append("SWAP")
             
             # Check Disks
             for disk_pct in disks_percents:
-                if disk_pct >= config.THRESHOLDS.get("disk", 90):
+                if disk_pct >= config.THRESHOLDS.get("disk", 90.0):
                     self.alert_triggered = True
                     self.triggering_modules.append("DISK")
                     break
-            
-            # Network usage check can be more complex, for now we use a simple placeholder logic
-            # as defined in the blueprint inputs.
             
             if self.alert_triggered:
                 utils.log_message(self.module_name, 
@@ -57,9 +87,34 @@ class Alerts:
             utils.log_message(self.module_name, f"Error checking thresholds: {str(e)}", level="ERROR")
             return False
 
-    def display_alert(self):
+    def get_data(self) -> Dict[str, Any]:
+        """
+        Returns the current internal state of alerts.
+        
+        Returns:
+            Dict[str, Any]: Alert status and triggering modules.
+        """
+        return {
+            "triggered": self.alert_triggered,
+            "modules": self.triggering_modules
+        }
+
+    def format(self) -> List[str]:
+        """
+        Formats alert status into a list of strings for dashboard display.
+        
+        Returns:
+            List[str]: Formatted alert message if triggered, empty list otherwise.
+        """
+        alert_str = self.display_alert()
+        return [alert_str] if alert_str else []
+
+    def display_alert(self) -> str:
         """
         Returns a blinking red string if alert is triggered.
+        
+        Returns:
+            str: Formatted alert message or empty string.
         """
         if not self.alert_triggered:
             return ""
@@ -67,20 +122,23 @@ class Alerts:
         alert_msg = f" !!! {labels['alerts'].upper()}: CRITICAL USAGE DETECTED [{', '.join(self.triggering_modules)}] !!! "
         return f"{config.COLORS['red']}{config.COLORS['blink']}{alert_msg}{config.COLORS['reset']}"
 
-    def sound_alert(self):
+    def display(self) -> str:
         """
-        Emits a system beep.
+        Returns the final string representation for the Alerts module.
+        
+        Returns:
+            str: Formatted alert message.
+        """
+        return self.display_alert()
+
+    def sound_alert(self) -> None:
+        """
+        Emits a system beep if alert is triggered.
         """
         if self.alert_triggered:
-            # System beep using ASCII bell character
-            sys.stdout.write('\a')
-            sys.stdout.flush()
-
-# Self-test logic
-if __name__ == "__main__":
-    alerts_mgr = Alerts()
-    # Simulate a trigger
-    triggered = alerts_mgr.check_thresholds(cpu_total=95, ram_percent=40, swap_percent=10, disks_percents=[20, 30])
-    print(f"Triggered: {triggered}")
-    print(f"Display: {alerts_mgr.display_alert()}")
-    alerts_mgr.sound_alert()
+            try:
+                # System beep using ASCII bell character
+                sys.stdout.write('\a')
+                sys.stdout.flush()
+            except Exception as e:
+                utils.log_message(self.module_name, f"Error sounding alert: {str(e)}", level="DEBUG")
