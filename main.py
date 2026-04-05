@@ -29,15 +29,13 @@ from modules.network import Network
 from modules.logs import Logs
 from modules.alerts import Alerts
 
-# Import CoreSight modules (new)
-from modules.hardware_interface import HardwareInterface
-from modules.buffer_manager import BufferManager
-from modules.trace_route import TraceRoute
+# Import CoreSight modules (industrial)
+from modules.topology_manager import TopologyManager, DeviceType
 from modules.trace_capture import TraceCapture
 from modules.trace_sink import TraceSink
 from modules.trace_decode import TraceDecode
 from modules.trace_analyzer import TraceAnalyzer
-from modules.perf_integration import PerfIntegration
+from modules.perf_bridge import PerfBridge
 
 class CoreSightUnified:
     """
@@ -61,14 +59,13 @@ class CoreSightUnified:
         
         # State storage for the pipeline
         self.raw_data: Dict[str, Any] = {}
-        self.hw_data: List[Dict[str, Any]] = []
         self.last_report: Dict[str, Any] = {"status": "empty"}
         
         self._initialize_modules()
 
     def _initialize_modules(self) -> None:
         """
-        Instantiates all monitoring and toolkit modules.
+        Instantiates all monitoring and toolkit modules with hardware discovery.
         """
         try:
             # 1. System Monitors
@@ -81,44 +78,65 @@ class CoreSightUnified:
             
             # 2. CoreSight Toolkit
             sysfs_base = "/sys/bus/coresight/devices/"
-            if self.simulation:
+            
+            # Check for real hardware first; fallback to mock if simulation and no real hw
+            if self.simulation and not os.path.exists(sysfs_base):
                 sysfs_base = "/tmp/coresight_mock/sys"
                 os.makedirs(sysfs_base, exist_ok=True)
-                for dev in ["etm0", "tmc_etr0"]:
-                    os.makedirs(os.path.join(sysfs_base, dev), exist_ok=True)
-                    with open(os.path.join(sysfs_base, dev, "enable_source"), 'w') as f: f.write("0")
+                # Create standard mock topology: ETM -> Funnel -> ETR
+                devices = {
+                    "etm0": {"type": "1", "subtype": "etm"},
+                    "funnel0": {"type": "2", "subtype": "funnel"},
+                    "tmc_etr0": {"type": "3", "subtype": "etr"}
+                }
+                for dev, meta in devices.items():
+                    dpath = os.path.join(sysfs_base, dev)
+                    os.makedirs(dpath, exist_ok=True)
+                    with open(os.path.join(dpath, "type"), 'w') as f: f.write(meta["type"])
+                    with open(os.path.join(dpath, "subtype"), 'w') as f: f.write(meta["subtype"])
+                    with open(os.path.join(dpath, "enable_source"), 'w') as f: f.write("0")
+                    with open(os.path.join(dpath, "enable_sink"), 'w') as f: f.write("0")
+                    # Create connections node
+                    os.makedirs(os.path.join(dpath, "connection0"), exist_ok=True)
+                
+                # Mock connections (hardlinked or logic-based symlinks)
+                # For mock, we'll just let the TopologyManager find them if we link them correctly
+                try:
+                    os.symlink(os.path.join(sysfs_base, "funnel0"), os.path.join(sysfs_base, "etm0", "connection0", "device"))
+                    os.symlink(os.path.join(sysfs_base, "tmc_etr0"), os.path.join(sysfs_base, "funnel0", "connection0", "device"))
+                except FileExistsError: pass
 
-            self.hw = HardwareInterface(sysfs_path=sysfs_base)
-            self.bm = BufferManager(self.hw)
-            self.tr = TraceRoute(self.hw)
-            self.capture = TraceCapture(self.hw, self.bm, self.tr)
+            self.topo = TopologyManager(base_path=sysfs_base)
+            self.capture = TraceCapture()
             self.sink = TraceSink(self.capture)
             self.decoder = TraceDecode()
             self.analyzer = TraceAnalyzer()
-            self.perf = PerfIntegration()
+            self.perf = PerfBridge()
 
-            utils.log_message(self.module_name, "All modules initialized successfully.")
+            utils.log_message(self.module_name, "Industrial CoreSight modules initialized.")
+
         except Exception as e:
             utils.log_message(self.module_name, f"Failed to initialize modules: {str(e)}", "CRITICAL")
             sys.exit(1)
 
     def collect_data(self) -> None:
         """
-        Step 1: Mandatory Data Collection for both contexts.
+        Step 1: Mandatory Data Collection for both contexts (Dynamic Hardware).
         """
         try:
-            # Always collect system data for alerts even if not visible
+            # 1. System Monitors
             self.raw_data['cpu_cores'], self.raw_data['cpu_total'] = self.cpu.update()
             self.raw_data['ram_data'] = self.ram.update()
             self.raw_data['disks_data'] = self.disk.update()
             self.raw_data['network_data'] = self.network.update()
             self.raw_data['logs_data'] = self.logs.update()
             
-            # Collect CoreSight data
-            self.hw_data = [
-                self.hw.device_status("etm0"),
-                self.hw.device_status("tmc_etr0")
-            ]
+            # 2. Toolkit Status (re-reading enabled state for UI)
+            # In a real tool, we might only refresh on trigger, but for TUI we poll.
+            for name, dev in self.topo.devices.items():
+                node = "enable_source" if dev.type == DeviceType.SOURCE else "enable_sink"
+                dev.enabled = (self.topo.hw.safe_read(name, node) == "1")
+            
             self.capture_status = self.capture.status()
             
         except Exception as e:
@@ -165,12 +183,12 @@ class CoreSightUnified:
 
     def _format_coresight_view(self, w: int) -> List[str]:
         lines = []
-        # Hardware Status
+        # Real Topology List
         lines.append(utils.draw_box_line(f"{config.COLORS['blue']}■ {labels['hw_status']}{config.COLORS['reset']}", w))
-        for dev in self.hw_data:
-            state_lbl = labels['enabled'] if dev['enabled'] else labels['disabled']
-            color = config.COLORS['green'] if dev['enabled'] else config.COLORS['reset']
-            lines.append(utils.draw_box_line(f"  {dev['name']:12} : {color}{state_lbl}{config.COLORS['reset']}", w))
+        for name, dev in self.topo.devices.items():
+            state_lbl = labels['enabled'] if dev.enabled else labels['disabled']
+            color = config.COLORS['green'] if dev.enabled else config.COLORS['reset']
+            lines.append(utils.draw_box_line(f"  {name:15} [{dev.subtype:8}] : {color}{state_lbl}{config.COLORS['reset']}", w))
         lines.append("├" + "─" * (w - 2) + "┤")
 
         # Capture Status
@@ -180,10 +198,8 @@ class CoreSightUnified:
         cap_color = config.COLORS['red'] + config.COLORS['blink'] if is_cap else config.COLORS['green']
         lines.append(utils.draw_box_line(f"  {labels['state']:12} : {cap_color}{cap_state}{config.COLORS['reset']}", w))
         if is_cap:
-            session = self.capture_status.get('session', {})
-            lines.append(utils.draw_box_line(f"  {labels['source']:12} : {', '.join(session.get('sources', []))}", w))
-            lines.append(utils.draw_box_line(f"  {labels['sink']:12} : {session.get('sink', 'N/A')}", w))
-            lines.append(utils.draw_box_line(f"  {labels['buffer']:12} : {session.get('buffer_kb', 0)} KB", w))
+            path = self.capture_status.get('path', [])
+            lines.append(utils.draw_box_line(f"  Path: {' -> '.join(path)}", w))
         lines.append("├" + "─" * (w - 2) + "┤")
 
         # Analysis
@@ -279,8 +295,16 @@ class CoreSightUnified:
                         if char == '\x1b' or char == '\x03': self.running = False
                         elif char == '1': self.view_mode = 1
                         elif char == '2': self.view_mode = 2
-                        elif char == 'S': # Start
-                            self.capture.capture_start({"sources": ["etm0"], "sink": "tmc_etr0", "buffer_kb": 1024})
+                        elif char == 'S': # Smart Start
+                            sources = [n for n, d in self.topo.devices.items() if d.type == DeviceType.SOURCE]
+                            sinks = [n for n, d in self.topo.devices.items() if d.type == DeviceType.SINK]
+                            if sources and sinks:
+                                try:
+                                    self.capture.capture_start(sources[0], sinks[0])
+                                except Exception as e:
+                                    utils.log_message(self.module_name, f"Capture failed: {str(e)}", "ERROR")
+                            else:
+                                utils.log_message(self.module_name, "No valid CoreSight Source/Sink pair detected.", "ERROR")
                         elif char == 'T': # Stop
                             self.capture.capture_stop()
                         elif char == 'A': # Analyze

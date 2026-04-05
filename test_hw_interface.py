@@ -18,50 +18,29 @@ class TestHardwareInterface(unittest.TestCase):
         with open(self.enable_node, 'w') as f:
             f.write("0")
             
-        # Create mgmt subdir
-        self.mgmt_path = os.path.join(self.device_path, "mgmt")
-        os.makedirs(self.mgmt_path)
-        with open(os.path.join(self.mgmt_path, "devid"), 'w') as f:
-            f.write("0x410b9d1")
+        # Create type and subtype
+        with open(os.path.join(self.device_path, "type"), 'w') as f: f.write("1")
+        with open(os.path.join(self.device_path, "subtype"), 'w') as f: f.write("etm")
             
-        self.hw = HardwareInterface(sysfs_path=self.test_dir)
+        self.hw = HardwareInterface(base_path=self.test_dir)
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    def test_device_enable(self):
-        success = self.hw.device_enable(self.device_name)
+    def test_safe_write(self):
+        success = self.hw.safe_write(self.device_name, "enable_source", "1")
         self.assertTrue(success)
         with open(self.enable_node, 'r') as f:
             val = f.read().strip()
         self.assertEqual(val, "1")
 
-    def test_device_disable(self):
-        # First enable it
-        with open(self.enable_node, 'w') as f:
-            f.write("1")
-            
-        success = self.hw.device_disable(self.device_name)
-        self.assertTrue(success)
-        with open(self.enable_node, 'r') as f:
-            val = f.read().strip()
-        self.assertEqual(val, "0")
+    def test_safe_read(self):
+        val = self.hw.safe_read(self.device_name, "subtype")
+        self.assertEqual(val, "etm")
 
-    def test_device_status(self):
-        status = self.hw.device_status(self.device_name)
-        self.assertEqual(status["name"], self.device_name)
-        self.assertFalse(status["enabled"])
-        self.assertEqual(status["mgmt"]["devid"], "0x410b9d1")
-        
-        # Enable and check again
-        with open(self.enable_node, 'w') as f:
-            f.write("1")
-        status = self.hw.device_status(self.device_name)
-        self.assertTrue(status["enabled"])
-
-    def test_node_not_found(self):
-        success = self.hw.device_enable("non_existent_device")
-        self.assertFalse(success)
+    def test_list_raw_devices(self):
+        devices = self.hw.list_raw_devices()
+        self.assertIn("etm0", devices)
 
 if __name__ == "__main__":
     unittest.main()

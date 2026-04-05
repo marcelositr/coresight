@@ -1,79 +1,58 @@
-# CoreSight: Dashboard Híbrido de Sistema e Toolkit de Trace ARM
+# CoreSight Industrial Toolkit & Dashboard
 
-O **CoreSight** é uma solução profissional e modular para Linux, projetada para unir o monitoramento de métricas de sistema em tempo real com um toolkit avançado de captura e análise de trace de hardware ARM CoreSight. 
+O **CoreSight** evoluiu de um simples monitor de sistema para uma plataforma de engenharia robusta voltada ao diagnóstico, captura e análise de hardware trace ARM em ambientes Linux. O projeto integra o monitoramento clássico de recursos com um motor avançado de topologia de hardware, seguindo rigorosamente os padrões de ativação e segurança do Kernel Linux.
 
-Desenvolvido sob padrões de engenharia sênior, o projeto oferece uma interface de terminal (TUI) responsiva, de alta fidelidade e com suporte a internacionalização, permitindo desde a gestão de recursos de CPU/RAM até o debug de baixo nível de fluxos de instrução (ETM).
+## 🛠️ Arquitetura e Capacidades Técnicas
 
-## 🚀 Funcionalidades Principais
+O sistema é construído sobre uma arquitetura de camadas independentes, garantindo estabilidade e extensibilidade:
 
-### 1. Monitoramento de Sistema (Visualização 1)
-*   **Métricas de Hardware**: Acompanhamento em tempo real de CPU (por núcleo), RAM, Swap e utilização de Disco.
-*   **Análise de Rede**: Velocidades de upload e download com conversão automática de unidades.
-*   **Logs Críticos**: Integração direta com o `journalctl` para exibição de erros do sistema em tempo real.
-*   **Sistema de Alertas**: Gerenciamento de limites (thresholds) com alertas visuais e sonoros.
+### 1. Camada de Topologia (Graph-Based)
+*   **TopologyManager**: Motor Singleton que constrói um grafo real do hardware (`Source → Link → Sink`).
+*   **Descoberta Dinâmica**: Mapeamento recursivo de conexões via `sysfs`, detectando Funnels, Replicators e TMCs (ETR/ETF).
+*   **Cálculo de Caminho**: Algoritmo de busca para encontrar rotas físicas válidas entre fontes de trace (CPU/ETM) e destinos (RAM/Sink).
 
-### 2. CoreSight Toolkit (Visualização 2)
-*   **Hardware Interface**: Abstração completa do `sysfs` para controle de dispositivos CoreSight (ETM, Funnel, Sink).
-*   **Orquestração de Captura**: Gerenciamento de sessões de captura, configuração de buffers e roteamento de trace.
-*   **Motor de Decode (Fase 2)**: Parsing experimental de pacotes ETMv4, identificando eventos como `BRANCH`, `TIMESTAMP` e `CYCLE_COUNT`.
-*   **Análise de Performance (Fase 3)**: Geração de estatísticas de densidade de saltos, contagem de ciclos e throughput de dados.
-*   **Integração Perf (Fase 4)**: Suporte ao subsistema `perf` do Linux para capturas robustas e extração de dados `cs_etm`.
-*   **Modo de Simulação**: Ambiente de simulação integrado que permite testes e desenvolvimento em plataformas não-ARM.
+### 2. Motor de Captura Industrial
+*   **Ordem de Ativação Segura**: Implementa a sequência mandatória do Kernel:
+    1.  **Sink** (Habilitação e alocação de buffer).
+    2.  **Links** (Configuração de roteamento downstream → upstream).
+    3.  **Source** (Ativação do fluxo de dados).
+*   **CaptureValidator**: Validação pré-voo de integridade de caminho e disponibilidade de registradores.
 
-## 🏗️ Arquitetura do Projeto
+### 3. I/O de Baixo Nível Robusto
+*   **Stateless Hardware Interface**: Operações de leitura/escrita com lógica de retentativa automática (Retry on EBUSY) para lidar com estados transitórios de hardware.
+*   **Logger Técnico**: Logs estruturados e categorizados por subsistema para facilitar o debug de campo.
 
-O projeto segue uma separação rigorosa de responsabilidades em módulos independentes:
+## 🚀 Interfaces de Controle
 
-*   **Core (`main.py`)**: Orquestrador central e motor de layout responsivo ANSI.
-*   **Modules (`modules/`)**:
-    *   `hardware_interface.py`: Camada de abstração de hardware.
-    *   `trace_capture.py`: Lógica de controle de sessões de trace.
-    *   `trace_decode.py`: Decoder de stream binário CoreSight.
-    *   `trace_analyzer.py`: Motor de análise estatística.
-    *   `perf_integration.py`: Interface com o comando `perf` do Linux.
-    *   `cpu.py`, `ram.py`, etc.: Módulos de monitoramento de recursos.
-*   **Utilities (`utils.py`)**: Funções de formatação, logging profissional e detecção de terminal.
+### 📊 Dashboard Unificado (TUI)
+Interface interativa de alta fidelidade com dois modos de visualização:
+*   **Tecla 1**: Monitoramento de Sistema (CPU, RAM, Disco, Rede e Logs).
+*   **Tecla 2**: CoreSight Toolkit (Status da topologia, estado da captura e análise de performance).
+
+### 💻 CLI Técnica (`coresightctl`)
+Ferramenta de linha de comando estilo `systemctl` para automação e diagnóstico profundo:
+```bash
+python3 cli/coresightctl.py list        # Lista dispositivos detectados
+python3 cli/coresightctl.py topology    # Exibe o grafo em árvore ASCII
+python3 cli/coresightctl.py path        # Valida caminho físico Source -> Sink
+python3 cli/coresightctl.py capture     # Controle direto de ativação
+```
 
 ## 🛠️ Requisitos e Instalação
 
-### Pré-requisitos
-*   Python 3.8+
-*   Linux com suporte a `sysfs` (CoreSight drivers recomendados para uso real)
-*   Dependências Python: `psutil`
-*   Dependências de Sistema: `perf`, `mypy` (para validação de tipos)
+*   **OS**: Linux (Kernel com drivers CoreSight habilitados).
+*   **Hardware**: Plataformas ARM64 ou ambiente de simulação integrado.
+*   **Dependências**: Python 3.8+, `psutil`.
 
-### Instalação
 ```bash
 git clone https://github.com/usuario/coresight.git
-cd coresight
 pip install psutil
 ```
 
-## 🎮 Como Usar
-
-Para iniciar o dashboard unificado:
-```bash
-python3 main.py
-```
-
-### Controles de Navegação
-*   `1`: Alternar para o **Monitor de Sistema**.
-*   `2`: Alternar para o **CoreSight Toolkit**.
-*   `ESC` / `Ctrl+C`: Encerramento seguro da aplicação.
-
-### Controles de Trace (Modo CoreSight)
-*   `S`: **Iniciar** captura de trace (Start).
-*   `T`: **Parar** captura de trace (Stop).
-*   `A`: **Analisar** dados capturados e gerar relatório (Analyze).
-
-## 📈 Roadmap de Evolução Concluído
-
-O projeto completou com sucesso as 4 fases de desenvolvimento planejadas no blueprint:
-- [x] **Fase 1**: Implementação da infraestrutura básica de captura e hardware.
-- [x] **Fase 2**: Desenvolvimento do motor de decodificação de pacotes.
-- [x] **Fase 3**: Implementação de métricas e análise estatística de trace.
-- [x] **Fase 4**: Integração profissional com o subsistema `perf` do Linux.
+## 🛡️ Segurança e Design
+*   **Hierarquia de Exceções**: Erros granulares (`TopologyError`, `SysfsError`, etc) para identificação precisa de falhas de hardware.
+*   **Modo Simulação**: Suporte total para desenvolvimento e testes em ambientes x86 através de mock estruturado do `sysfs`.
+*   **Padrões Industriais**: Código com tipagem estática completa, documentação técnica e separação clara de responsabilidades.
 
 ## 📄 Licença
-
-Este projeto é uma ferramenta de engenharia avançada destinada a desenvolvedores de sistemas embarcados e administradores de performance. Todos os direitos reservados.
+Projeto destinado a engenheiros de sistemas embarcados e profissionais de performance. Todos os direitos reservados.

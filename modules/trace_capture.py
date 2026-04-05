@@ -1,132 +1,94 @@
 """
-Trace Capture Module for CoreSight Toolkit.
-Orchestrates the capture process: starts, stops, and manages overall state.
-Follows Senior Engineer standards and Blueprint specifications.
+CoreSight Trace Capture Engine.
+Orchestrates activation and deactivation in strict hardware order.
 """
 
-import utils
-from typing import List, Dict, Any, Optional
-from modules.hardware_interface import HardwareInterface
-from modules.buffer_manager import BufferManager
-from modules.trace_route import TraceRoute
+from typing import List, Optional
+from modules.topology_manager import TopologyManager
+from modules.capture_validator import CaptureValidator
+from modules.exceptions import CaptureError
+from modules.debug_logger import logger
 
 class TraceCapture:
-    """
-    Orchestrates the trace capture session by managing sources, sinks, and routing.
-    """
-    
-    def __init__(self, hw_interface: HardwareInterface, 
-                 buffer_manager: BufferManager,
-                 trace_route: TraceRoute) -> None:
-        """
-        Initializes the trace capture engine.
-        
-        Args:
-            hw_interface (HardwareInterface): The hardware interface.
-            buffer_manager (BufferManager): The buffer manager.
-            trace_route (TraceRoute): The trace router.
-        """
-        self.module_name: str = "trace_capture"
-        self.hw: HardwareInterface = hw_interface
-        self.bm: BufferManager = buffer_manager
-        self.tr: TraceRoute = trace_route
-        self.capturing: bool = False
-        self.active_session: Dict[str, Any] = {}
-        utils.log_message(self.module_name, "TraceCapture engine initialized.", "DEBUG")
+    def __init__(self) -> None:
+        # TopologyManager is a singleton, it will use default path unless initialized elsewhere
+        self.topo = TopologyManager()
+        self.validator = CaptureValidator(self.topo)
+        self.active_path: List[str] = []
 
-    def capture_start(self, config: Dict[str, Any]) -> bool:
-        """
-        Starts a trace capture session based on provided configuration.
-        
-        Args:
-            config (Dict[str, Any]): Configuration containing 'sources', 'funnels', 'sink', 'buffer_kb'.
-            
-        Returns:
-            bool: True if capture started successfully.
-        """
-        if self.capturing:
-            utils.log_message(self.module_name, "Capture already in progress.", "WARNING")
-            return False
-            
+    def capture_start(self, source: str, sink: str, buffer_kb: int = 1024) -> bool:
+        """Starts capture in strict order: Sink -> Links -> Source."""
         try:
-            # 1. Setup Sink and Buffer
-            sink_name = config.get('sink', 'tmc_etr0')
-            buffer_kb = config.get('buffer_kb', 1024)
-            if not self.bm.buffer_create(sink_name, buffer_kb):
-                return False
-                
-            # 2. Setup Routing
-            sources = config.get('sources', [])
-            funnels = config.get('funnels', []) # Assuming one funnel for simplicity
-            funnel_name = funnels[0] if funnels else "funnel0"
+            # Refresh topology to get latest state
+            self.topo.refresh_topology()
             
-            for source in sources:
-                self.tr.route_setup(source, funnel_name, sink_name)
+            path = self.topo.find_path(source, sink)
+            self.validator.validate_path(path)
+            self.validator.validate_buffer_size(sink, buffer_kb)
+            
+            logger.capture(f"Activating path: {' -> '.join(path)}")
+            
+            # 1. Enable SINK first (path[-1])
+            # Set buffer size if it's a TMC (ETR/ETF)
+            if "tmc" in sink or "etr" in sink or "etf" in sink:
+                self.topo.hw.safe_write(sink, "buffer_size", str(buffer_kb * 1024))
+            
+            self.topo.hw.safe_write(sink, "enable_sink", "1")
+            
+            # 2. Enable LINKS (path[1:-1]) from downstream to upstream (reverse order)
+            links = path[1:-1]
+            for link in reversed(links):
+                # Links use enable_sink or enable_link depending on kernel version
+                # We try common nodes
+                try:
+                    self.topo.hw.safe_write(link, "enable_sink", "1")
+                except Exception:
+                    # Fallback for older drivers
+                    pass
                 
-            # 3. Enable Sink First (Recommended CoreSight sequence)
-            if not self.hw.device_enable(sink_name):
-                return False
-                
-            # 4. Enable Sources (ETMs)
-            for source in sources:
-                if not self.hw.device_enable(source):
-                    # Attempt cleanup on partial failure
-                    self.capture_stop()
-                    return False
-                    
-            self.capturing = True
-            self.active_session = config
-            utils.log_message(self.module_name, f"Capture session started: {sources} -> {sink_name}", "INFO")
+            # 3. Enable SOURCE last (path[0])
+            self.topo.hw.safe_write(source, "enable_source", "1")
+            
+            self.active_path = path
+            logger.capture("Trace session active.")
             return True
             
         except Exception as e:
-            utils.log_message(self.module_name, f"Capture start failed: {str(e)}", "ERROR")
+            logger.error(f"Failed to start capture: {str(e)}")
             self.capture_stop()
-            return False
+            raise CaptureError(str(e))
 
     def capture_stop(self) -> bool:
-        """
-        Stops the current trace capture session.
+        """Stops capture in reverse order: Source -> Links -> Sink."""
+        if not self.active_path: return False
         
-        Returns:
-            bool: True if stopped successfully.
-        """
-        if not self.capturing:
-            utils.log_message(self.module_name, "No capture session active.", "WARNING")
-            return False
-            
+        path = self.active_path
+        logger.capture(f"Deactivating path: {' -> '.join(path)}")
+        
         try:
-            sources = self.active_session.get('sources', [])
-            sink_name = self.active_session.get('sink', 'tmc_etr0')
+            # 1. Disable SOURCE first
+            self.topo.hw.safe_write(path[0], "enable_source", "0")
             
-            # 1. Disable Sources First (ETMs)
-            for source in sources:
-                self.hw.device_disable(source)
+            # 2. Disable LINKS from upstream to downstream
+            links = path[1:-1]
+            for link in links:
+                try:
+                    self.topo.hw.safe_write(link, "enable_sink", "0")
+                except Exception:
+                    pass
                 
-            # 2. Disable Sink
-            self.hw.device_disable(sink_name)
+            # 3. Disable SINK last
+            self.topo.hw.safe_write(path[-1], "enable_sink", "0")
             
-            # 3. Destroy Buffer reference
-            self.bm.buffer_destroy(sink_name)
-            
-            # 4. Reset routing
-            self.tr.route_reset()
-            
-            self.capturing = False
-            utils.log_message(self.module_name, "Capture session stopped.", "INFO")
+            self.active_path = []
             return True
         except Exception as e:
-            utils.log_message(self.module_name, f"Capture stop error: {str(e)}", "ERROR")
+            logger.error(f"Error during capture stop: {str(e)}")
             return False
 
-    def status(self) -> Dict[str, Any]:
-        """
-        Retrieves current capture engine status.
-        
-        Returns:
-            Dict[str, Any]: Current status.
-        """
+    def status(self) -> dict:
+        """Returns the current capture engine status."""
         return {
-            "capturing": self.capturing,
-            "session": self.active_session
+            "capturing": len(self.active_path) > 0,
+            "path": self.active_path
         }
