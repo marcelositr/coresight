@@ -1,0 +1,16 @@
+objetivo_principal:
+
+  Criar uma ferramenta modular para coleta e processamento
+  de dados CoreSight em sistemas Linux.
+
+objetivos_secundarios:
+
+  - Facilitar debug low level
+  - Permitir analise de performance
+  - Estudo da infraestrutura CoreSight
+
+nao_objetivos:
+
+  - Interface grafica
+  - Dependencias pesadas
+  - Framework complexo

@@ -1,0 +1,19 @@
+fluxo_trace:
+
+  origem:
+    - ETM
+
+  passa_por:
+    - funnel
+    - replicator
+
+  captura:
+    - ETF
+    - ETR
+
+  processamento:
+    - decode
+
+  destino:
+    - arquivo
+    - analise

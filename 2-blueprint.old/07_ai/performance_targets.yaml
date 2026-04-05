@@ -1,0 +1,32 @@
+performance_targets:
+
+  objetivos:
+
+    latencia:
+
+      max_ms: 10
+
+    memoria:
+
+      max_mb: 128
+
+    cpu:
+
+      overhead_percent: 5
+
+boas_praticas:
+
+  - evitar copia buffer desnecessaria
+  - preferir stack quando possivel
+  - minimizar syscalls
+  - evitar malloc frequente
+
+otimizacoes_permitidas:
+
+  - preallocation buffers
+  - memory pools
+
+otimizacoes_proibidas:
+
+  - micro otimização precoce
+  - codigo ilegivel por performance

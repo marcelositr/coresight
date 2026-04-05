@@ -1,0 +1,33 @@
+anti_patterns:
+
+  proibidos:
+
+    - arquivos gigantes
+    - funcoes gigantes
+    - dependencias ocultas
+    - codigo duplicado
+    - hardcode configs
+
+erros_comuns:
+
+  - misturar hardware e logica
+  - ignorar erros syscall
+  - nao validar buffers
+  - alocar sem liberar
+
+detectar_e_evitar:
+
+  memory_leaks:
+
+    regra:
+      toda alocacao deve ter free
+
+  race_conditions:
+
+    regra:
+      proteger acesso concorrente
+
+  buffer_overflow:
+
+    regra:
+      validar tamanho sempre

@@ -1,0 +1,7 @@
+limites:
+
+  max_linhas_arquivo: 800
+
+  max_linhas_funcao: 80
+
+  max_complexidade: 15

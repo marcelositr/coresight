@@ -1,0 +1,22 @@
+componentes:
+
+  sources:
+    - ETM
+
+  links:
+    - funnel
+    - replicator
+
+  sinks:
+    - ETF
+    - ETR
+
+relacoes:
+
+  ETM:
+    conecta:
+      - funnel
+
+  funnel:
+    conecta:
+      - ETF

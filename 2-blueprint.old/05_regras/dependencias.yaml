@@ -1,0 +1,10 @@
+dependencias_permitidas:
+
+  - libc
+  - perf
+
+dependencias_proibidas:
+
+  - boost
+  - qt
+  - frameworks pesados

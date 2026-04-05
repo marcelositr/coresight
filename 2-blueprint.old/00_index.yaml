@@ -1,0 +1,55 @@
+projeto: coresight_toolkit
+
+versao_blueprint: 1.0
+
+descricao:
+  Framework modular para captura e analise de trace ARM CoreSight
+
+ordem_leitura:
+
+  visao:
+    - 01_visao/objetivo.yaml
+    - 01_visao/escopo.yaml
+    - 01_visao/restricoes.yaml
+
+  arquitetura:
+    - 02_arquitetura/arquitetura.yaml
+    - 02_arquitetura/fluxo_dados.yaml
+    - 02_arquitetura/topologia_coresight.yaml
+
+  modulos:
+    - 03_modulos/hardware_interface.yaml
+    - 03_modulos/buffer_manager.yaml
+    - 03_modulos/trace_capture.yaml
+    - 03_modulos/trace_route.yaml
+    - 03_modulos/trace_decode.yaml
+    - 03_modulos/trace_sink.yaml
+
+  interfaces:
+    - 04_interfaces/apis.yaml
+    - 04_interfaces/contratos.yaml
+
+  regras:
+    - 05_regras/regras_codigo.yaml
+    - 05_regras/padroes_nomes.yaml
+    - 05_regras/complexidade.yaml
+    - 05_regras/dependencias.yaml
+
+  evolucao:
+    - 06_evolucao/roadmap.yaml
+    - 06_evolucao/features.yaml
+    - 06_evolucao/melhorias.yaml
+
+modulos_criticos:
+
+  - hardware_interface
+  - trace_capture
+
+modulos_estaveis:
+
+  - buffer_manager
+  - trace_sink
+
+modulos_experimentais:
+
+  - trace_decode

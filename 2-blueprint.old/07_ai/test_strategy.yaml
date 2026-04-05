@@ -1,0 +1,45 @@
+test_strategy:
+
+  tipos:
+
+    unitarios:
+
+      foco:
+        funcoes isoladas
+
+    integracao:
+
+      foco:
+        comunicacao modulos
+
+    replay_trace:
+
+      foco:
+        validar decode
+
+dados_teste:
+
+  usar:
+
+    - trace pequeno
+    - trace corrompido
+    - trace vazio
+
+criterios:
+
+  minimo:
+
+    cobertura_percent: 60
+
+validacoes:
+
+  obrigatorias:
+
+    - retorno erro valido
+    - nao crashar
+    - liberar memoria
+
+testes_futuros:
+
+  - fuzzing trace input
+  - stress buffers

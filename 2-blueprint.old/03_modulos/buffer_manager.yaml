@@ -1,0 +1,20 @@
+nome: buffer_manager
+
+descricao:
+  Gerencia buffers de trace
+
+responsabilidades:
+
+  - alocacao buffer
+  - liberar memoria
+  - controle overflow
+
+interfaces:
+
+  - buffer_create()
+  - buffer_destroy()
+  - buffer_status()
+
+depende:
+
+  - hardware_interface

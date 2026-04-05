@@ -1,0 +1,20 @@
+nome: trace_capture
+
+descricao:
+  Captura dados trace CoreSight
+
+responsabilidades:
+
+  - iniciar captura
+  - parar captura
+  - salvar dados
+
+interfaces:
+
+  - capture_start()
+  - capture_stop()
+
+depende:
+
+  - hardware_interface
+  - buffer_manager

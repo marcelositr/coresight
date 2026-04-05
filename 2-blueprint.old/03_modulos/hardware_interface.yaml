@@ -1,0 +1,20 @@
+nome: hardware_interface
+
+descricao:
+  Abstracao de acesso hardware CoreSight
+
+responsabilidades:
+
+  - acessar sysfs
+  - configurar dispositivos
+  - leitura registradores
+
+interfaces:
+
+  - device_enable()
+  - device_disable()
+  - device_status()
+
+restricoes:
+
+  - nao conter logica negocio

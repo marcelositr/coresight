@@ -1,0 +1,17 @@
+arquitetura:
+
+  estilo:
+    modular
+
+  camadas:
+
+    - hardware
+    - captura
+    - processamento
+    - exportacao
+
+principios:
+
+  - baixo acoplamento
+  - interfaces claras
+  - separacao responsabilidades

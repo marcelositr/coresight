@@ -1,0 +1,17 @@
+roadmap:
+
+  fase1:
+
+    - captura basica
+
+  fase2:
+
+    - decode inicial
+
+  fase3:
+
+    - analise trace
+
+  fase4:
+
+    - integracao perf

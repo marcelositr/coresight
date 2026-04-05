@@ -1,0 +1,17 @@
+contratos:
+
+  capture_start:
+
+    entrada:
+      - config
+
+    saida:
+      - status
+
+  decode_stream:
+
+    entrada:
+      - raw_trace
+
+    saida:
+      - eventos

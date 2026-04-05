@@ -1,0 +1,17 @@
+nome: trace_sink
+
+descricao:
+  Exporta dados trace
+
+responsabilidades:
+
+  - salvar arquivo
+  - exportar formato bruto
+
+interfaces:
+
+  - export_file()
+
+depende:
+
+  - trace_capture

@@ -1,0 +1,18 @@
+nome: trace_route
+
+descricao:
+  Configura roteamento trace
+
+responsabilidades:
+
+  - configurar funnels
+  - configurar sinks
+
+interfaces:
+
+  - route_setup()
+  - route_reset()
+
+depende:
+
+  - hardware_interface

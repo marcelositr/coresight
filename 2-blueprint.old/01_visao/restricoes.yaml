@@ -1,0 +1,16 @@
+restricoes_tecnicas:
+
+  plataforma:
+    - Linux
+
+  arquitetura:
+    - ARM64
+
+  memoria_max_mb: 128
+
+  overhead_max_percent: 5
+
+restricoes_design:
+
+  - evitar codigo monolitico
+  - evitar dependencias externas grandes

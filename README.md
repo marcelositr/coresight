@@ -1,94 +1,79 @@
-# CoreSight
+# CoreSight: Dashboard Híbrido de Sistema e Toolkit de Trace ARM
 
-O CoreSight é um dashboard de terminal modular e profissional, projetado para o monitoramento de sistemas em tempo real em ambientes Linux. Ele fornece uma interface unificada de alta fidelidade para rastreamento de métricas de hardware, tráfego de rede e logs críticos do sistema com um motor de layout responsivo.
+O **CoreSight** é uma solução profissional e modular para Linux, projetada para unir o monitoramento de métricas de sistema em tempo real com um toolkit avançado de captura e análise de trace de hardware ARM CoreSight. 
 
-## Visão Geral
+Desenvolvido sob padrões de engenharia sênior, o projeto oferece uma interface de terminal (TUI) responsiva, de alta fidelidade e com suporte a internacionalização, permitindo desde a gestão de recursos de CPU/RAM até o debug de baixo nível de fluxos de instrução (ETM).
 
-O sistema é construído sobre uma arquitetura modular onde cada componente de monitoramento (CPU, RAM, Disco, Rede, Logs) opera de forma independente. A camada de integração gerencia a renderização responsiva e o sistema de gerenciamento de alertas, garantindo que a interface mantenha sua integridade estrutural em diversas dimensões de terminal.
+## 🚀 Funcionalidades Principais
 
-## Funcionalidades Principais
+### 1. Monitoramento de Sistema (Visualização 1)
+*   **Métricas de Hardware**: Acompanhamento em tempo real de CPU (por núcleo), RAM, Swap e utilização de Disco.
+*   **Análise de Rede**: Velocidades de upload e download com conversão automática de unidades.
+*   **Logs Críticos**: Integração direta com o `journalctl` para exibição de erros do sistema em tempo real.
+*   **Sistema de Alertas**: Gerenciamento de limites (thresholds) com alertas visuais e sonoros.
 
-- **Rastreamento Avançado de Hardware**: Monitoramento em tempo real da utilização da CPU (por núcleo e média total), consumo de memória (RAM e Swap) e utilização de espaço em disco em todos os pontos de montagem do sistema.
-- **Análise de Tráfego de Rede**: Cálculo em tempo real das velocidades de upload e download por interface, com conversão automática de unidades (B/s, KB/s, MB/s) e alinhamento de largura fixa.
-- **Integração de Logs em Tempo Real**: Monitoramento direto de erros críticos do sistema via journalctl, filtrados especificamente para exibir eventos ocorridos após o início da sessão de monitoramento.
-- **Layout ANSI Responsivo**: Motor de renderização customizado que considera códigos de escape ANSI para garantir o alinhamento perfeito das bordas e o redimensionamento proporcional (suporte para terminais Ultrawide e telas pequenas).
-- **Sistema de Alertas Inteligente**: Gerenciamento centralizado de limites (thresholds) que aciona efeitos visuais intermitentes e alertas sonoros do sistema quando os limites críticos são excedidos.
-- **Internacionalização (i18n)**: Detecção automática do idioma do sistema com suporte nativo para Inglês e Português (Brasil).
-- **Manipulação de Entrada de Baixo Nível**: Implementação nativa de captura de teclado não bloqueante, permitindo a saída via ESC ou Ctrl+C sem a necessidade da tecla Enter.
+### 2. CoreSight Toolkit (Visualização 2)
+*   **Hardware Interface**: Abstração completa do `sysfs` para controle de dispositivos CoreSight (ETM, Funnel, Sink).
+*   **Orquestração de Captura**: Gerenciamento de sessões de captura, configuração de buffers e roteamento de trace.
+*   **Motor de Decode (Fase 2)**: Parsing experimental de pacotes ETMv4, identificando eventos como `BRANCH`, `TIMESTAMP` e `CYCLE_COUNT`.
+*   **Análise de Performance (Fase 3)**: Geração de estatísticas de densidade de saltos, contagem de ciclos e throughput de dados.
+*   **Integração Perf (Fase 4)**: Suporte ao subsistema `perf` do Linux para capturas robustas e extração de dados `cs_etm`.
+*   **Modo de Simulação**: Ambiente de simulação integrado que permite testes e desenvolvimento em plataformas não-ARM.
 
-## Arquitetura
+## 🏗️ Arquitetura do Projeto
 
-O projeto segue uma separação rigorosa de responsabilidades:
-- **Core (main.py)**: Orquestra o ciclo de vida, entradas de teclado e a montagem do layout responsivo.
-- **Módulos (modules/)**: Contém a lógica de coleta de dados e formatação especializada para cada subsistema.
-- **Utilitários (utils.py)**: Fornece o motor de formatação compatível com ANSI, geração de barras de progresso e detecção de tamanho de terminal.
-- **Configuração (config.py)**: Centraliza limites, definições de cores e intervalos de atualização.
+O projeto segue uma separação rigorosa de responsabilidades em módulos independentes:
 
-## Pré-requisitos
+*   **Core (`main.py`)**: Orquestrador central e motor de layout responsivo ANSI.
+*   **Modules (`modules/`)**:
+    *   `hardware_interface.py`: Camada de abstração de hardware.
+    *   `trace_capture.py`: Lógica de controle de sessões de trace.
+    *   `trace_decode.py`: Decoder de stream binário CoreSight.
+    *   `trace_analyzer.py`: Motor de análise estatística.
+    *   `perf_integration.py`: Interface com o comando `perf` do Linux.
+    *   `cpu.py`, `ram.py`, etc.: Módulos de monitoramento de recursos.
+*   **Utilities (`utils.py`)**: Funções de formatação, logging profissional e detecção de terminal.
 
-- Python 3.x
-- Biblioteca psutil
-- Distribuição Linux baseada em Systemd (para integração com journalctl)
+## 🛠️ Requisitos e Instalação
 
-## Instalação
+### Pré-requisitos
+*   Python 3.8+
+*   Linux com suporte a `sysfs` (CoreSight drivers recomendados para uso real)
+*   Dependências Python: `psutil`
+*   Dependências de Sistema: `perf`, `mypy` (para validação de tipos)
 
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/seuusuario/CoreSight.git
-   cd CoreSight
-   ```
+### Instalação
+```bash
+git clone https://github.com/usuario/coresight.git
+cd coresight
+pip install psutil
+```
 
-2. Instale as dependências necessárias:
-   ```bash
-   pip install psutil
-   ```
+## 🎮 Como Usar
 
-## Uso
-
-Para iniciar o dashboard, execute o ponto de entrada principal:
-
+Para iniciar o dashboard unificado:
 ```bash
 python3 main.py
 ```
 
-### Controles
-- **ESC**: Encerramento seguro da aplicação.
-- **Ctrl+C**: Interrupção imediata e saída.
+### Controles de Navegação
+*   `1`: Alternar para o **Monitor de Sistema**.
+*   `2`: Alternar para o **CoreSight Toolkit**.
+*   `ESC` / `Ctrl+C`: Encerramento seguro da aplicação.
 
-## Configuração
+### Controles de Trace (Modo CoreSight)
+*   `S`: **Iniciar** captura de trace (Start).
+*   `T`: **Parar** captura de trace (Stop).
+*   `A`: **Analisar** dados capturados e gerar relatório (Analyze).
 
-A personalização pode ser realizada no arquivo `config.py`:
-- **REFRESH_INTERVAL**: Ajuste a frequência de atualização (padrão é 1.0 segundo).
-- **THRESHOLDS**: Defina os limites percentuais para alertas de CPU, RAM e Disco.
-- **DEBUG**: Alterna o log interno para cada módulo.
+## 📈 Roadmap de Evolução Concluído
 
-## Estrutura do Projeto
+O projeto completou com sucesso as 4 fases de desenvolvimento planejadas no blueprint:
+- [x] **Fase 1**: Implementação da infraestrutura básica de captura e hardware.
+- [x] **Fase 2**: Desenvolvimento do motor de decodificação de pacotes.
+- [x] **Fase 3**: Implementação de métricas e análise estatística de trace.
+- [x] **Fase 4**: Integração profissional com o subsistema `perf` do Linux.
 
-```text
-CoreSight/
-├── main.py              # Ponto de entrada e motor de layout
-├── config.py            # Configurações globais e limites
-├── utils.py             # Utilitários de interface e formatação
-├── modules/             # Submódulos de monitoramento
-│   ├── cpu.py
-│   ├── ram.py
-│   ├── disk.py
-│   ├── network.py
-│   ├── logs.py
-│   ├── alerts.py
-│   └── extras.py        # Template para expansões futuras
-├── i18n/                # Arquivos de internacionalização
-│   ├── __init__.py      # Carregador de idioma
-│   ├── en_US.py
-│   └── pt_BR.py
-└── blueprint/           # Especificações de design do projeto
-```
+## 📄 Licença
 
-## Logs Internos
-
-O CoreSight mantém arquivos de log individuais para cada módulo para facilitar a depuração e auditoria de desempenho. Os logs são armazenados no diretório de cache do usuário:
-`~/.cache/CoreSight/`
-
-## Licença
-
-Este projeto é destinado a administradores de sistema e usuários avançados que necessitam de uma solução de monitoramento leve e robusta. Todos os direitos reservados.
+Este projeto é uma ferramenta de engenharia avançada destinada a desenvolvedores de sistemas embarcados e administradores de performance. Todos os direitos reservados.

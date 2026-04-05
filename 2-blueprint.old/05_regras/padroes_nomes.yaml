@@ -1,0 +1,13 @@
+padroes:
+
+  arquivos:
+    snake_case
+
+  funcoes:
+    snake_case
+
+  structs:
+    CamelCase
+
+  constantes:
+    UPPER_CASE

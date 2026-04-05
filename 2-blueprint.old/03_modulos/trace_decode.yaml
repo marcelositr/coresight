@@ -1,0 +1,21 @@
+nome: trace_decode
+
+descricao:
+  Decodifica dados trace
+
+responsabilidades:
+
+  - parsing stream
+  - identificar eventos
+
+interfaces:
+
+  - decode_stream()
+
+depende:
+
+  - trace_capture
+
+status:
+
+  experimental

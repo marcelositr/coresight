@@ -1,0 +1,14 @@
+escopo:
+
+  inclui:
+
+    - captura trace ETM
+    - leitura sysfs coresight
+    - roteamento trace
+    - decode basico
+
+  exclui:
+
+    - GUI
+    - suporte Windows
+    - decode completo ETMv4

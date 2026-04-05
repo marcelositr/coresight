@@ -1,0 +1,40 @@
+design_patterns:
+
+  usar:
+
+    modularizacao:
+
+      descricao:
+        separar responsabilidades por modulo
+
+    facade:
+
+      descricao:
+        fornecer interface simples para hardware complex
+
+    pipeline:
+
+      descricao:
+        processamento em etapas
+
+    strategy:
+
+      descricao:
+        permitir decode diferentes
+
+evitar:
+
+  singleton:
+
+    motivo:
+      dificulta testes
+
+  god_object:
+
+    motivo:
+      aumenta acoplamento
+
+  deep inheritance:
+
+    motivo:
+      complexidade desnecessaria

@@ -1,0 +1,14 @@
+apis_publicas:
+
+  capture:
+
+    - capture_start()
+    - capture_stop()
+
+  decode:
+
+    - decode_stream()
+
+  export:
+
+    - export_file()

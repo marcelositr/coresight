@@ -1,0 +1,16 @@
+regras:
+
+  sempre:
+
+    - funcoes pequenas
+    - codigo legivel
+    - erros tratados
+
+  nunca:
+
+    - codigo duplicado
+    - dependencias circulares
+
+preferir:
+
+  - design simples

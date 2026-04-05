@@ -1,0 +1,61 @@
+ai_context:
+
+  experiencia_assumida:
+
+    nivel:
+      desenvolvedor_low_level
+
+    conhecimentos:
+      - C
+      - Linux kernel concepts
+      - ARM architecture
+      - debugging
+
+prioridades:
+
+  ordem:
+
+    - estabilidade
+    - clareza
+    - simplicidade
+    - performance
+    - features
+
+estilo_codigo:
+
+  inspiracao:
+
+    - Linux kernel
+    - perf tools
+    - embedded C
+
+preferencias:
+
+  - codigo explicito
+  - poucas abstrações
+  - controle manual memoria
+
+evitar:
+
+  - abstração excessiva
+  - design patterns complexos
+  - metaprogramming
+  - dependencias desnecessarias
+
+assumir:
+
+  - ambiente tecnico
+  - usuario experiente
+  - foco CLI
+
+nunca_gerar:
+
+  - GUI
+  - codigo experimental em modulos estaveis
+  - hacks temporarios
+
+sempre_gerar:
+
+  - tratamento erro
+  - logs debug opcionais
+  - validacao parametros
