@@ -1,0 +1,172 @@
+task: reorganizacao_estrutural_controlada
+
+objetivo:
+  reorganizar_diretorios: true
+  mover_arquivos: true
+  corrigir_imports: true
+
+restricoes:
+
+  proibido:
+    - alterar_logica
+    - refatorar_codigo
+    - alterar_classes
+    - alterar_funcoes
+    - adicionar_features
+    - remover_codigo
+    - otimizar_codigo
+    - reescrever_arquivos
+    - alterar_comportamento
+
+  permitido:
+    - criar_diretorios
+    - mover_arquivos
+    - atualizar_imports
+    - adicionar___init__.py
+
+estrategia_execucao:
+
+  ordem_obrigatoria:
+
+    - criar_diretorios
+    - mover_arquivos
+    - atualizar_imports
+    - validar_projeto
+
+diretorios_criar:
+
+  - core
+  - system
+  - infra
+  - tests/unit
+  - tests/integration
+  - docs/blueprints/archive
+
+movimentacao_arquivos:
+
+  system:
+
+    - modules/cpu.py -> system/cpu.py
+    - modules/ram.py -> system/ram.py
+    - modules/disk.py -> system/disk.py
+    - modules/network.py -> system/network.py
+    - modules/logs.py -> system/logs.py
+    - modules/alerts.py -> system/alerts.py
+
+  core:
+
+    - modules/hardware_interface.py -> core/hardware_interface.py
+    - modules/topology_manager.py -> core/topology_manager.py
+    - modules/trace_capture.py -> core/trace_capture.py
+    - modules/trace_route.py -> core/trace_route.py
+    - modules/trace_decode.py -> core/trace_decode.py
+    - modules/trace_sink.py -> core/trace_sink.py
+    - modules/trace_analyzer.py -> core/trace_analyzer.py
+    - modules/buffer_manager.py -> core/buffer_manager.py
+    - modules/capture_validator.py -> core/capture_validator.py
+    - modules/perf_bridge.py -> core/perf_bridge.py
+    - modules/perf_integration.py -> core/perf_integration.py
+
+  infra:
+
+    - modules/exceptions.py -> infra/exceptions.py
+    - modules/debug_logger.py -> infra/debug_logger.py
+    - modules/extras.py -> infra/extras.py
+
+  tests_unit:
+
+    - test_hw_interface.py -> tests/unit/
+    - test_trace_decode.py -> tests/unit/
+    - test_trace_analyzer.py -> tests/unit/
+
+  tests_integration:
+
+    - test_phase1_integration.py -> tests/integration/
+    - test_phase2_integration.py -> tests/integration/
+    - test_phase3_integration.py -> tests/integration/
+
+  docs:
+
+    - 1-blueprint.old -> docs/blueprints/archive/
+    - 2-blueprint.old -> docs/blueprints/archive/
+
+imports:
+
+  atualizar:
+    - todos_imports_quebrados
+    - apenas_caminhos
+    - menor_mudanca_possivel
+
+  regra:
+
+    import_ja_funciona:
+      acao: nao_modificar
+
+    duvida:
+      acao: nao_modificar
+
+arquivos_especiais:
+
+  criar_init:
+
+    - core/__init__.py
+    - system/__init__.py
+    - infra/__init__.py
+    - tests/__init__.py
+    - tests/unit/__init__.py
+    - tests/integration/__init__.py
+
+limpeza:
+
+  remover_se_existir:
+
+    - __pycache__
+    - "*.pyc"
+    - .mypy_cache
+    - .pytest_cache
+
+validacao:
+
+  verificar:
+
+    - imports_validos
+    - nenhum_ModuleNotFoundError
+    - nenhum_import_circular
+    - estrutura_consistente
+
+modo_execucao:
+
+  tipo: incremental
+
+  regras:
+
+    - mover_arquivo
+    - corrigir_imports_relacionados
+    - validar
+    - continuar
+
+seguranca:
+
+  prioridade:
+
+    - nao_quebrar_projeto
+    - nao_alterar_logica
+    - mudancas_minimas
+
+resultado_esperado:
+
+  - projeto_organizado
+  - imports_funcionando
+  - mesma_funcionalidade
+  - estrutura_profissional
+
+controle_danos:
+
+  se_import_quebrar:
+    corrigir_imediatamente
+
+  se_conflito:
+    parar_e_nao_inventar_solucao
+
+  se_nao_tiver_certeza:
+    nao_modificar

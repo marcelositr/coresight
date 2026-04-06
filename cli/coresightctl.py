@@ -11,9 +11,8 @@ import os
 # Ensure modules are importable from project root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from modules.topology_manager import TopologyManager
-from modules.trace_capture import TraceCapture
-from modules.debug_logger import logger
+from core.topology_manager import TopologyManager
+from core.trace_capture import TraceCapture
 
 def main():
     parser = argparse.ArgumentParser(description="CoreSight Diagnostic Control Tool")
@@ -60,15 +59,15 @@ def main():
         
     elif args.command == "rescan":
         topo.refresh_topology()
-        print(f"Rescan complete. Found {len(topo.devices)} devices.")
+        print("Rescan complete.")
 
     elif args.command == "path":
         try:
             p = topo.find_path(args.source, args.sink)
-            print(f"Valid physical path detected:")
+            print("Valid physical path detected:")
             print("  " + " -> ".join(p))
-        except Exception as e:
-            print(f"Path lookup failed: {str(e)}")
+        except Exception:
+            print("Path lookup failed")
 
     elif args.command == "capture":
         if args.action == "start":
@@ -77,9 +76,9 @@ def main():
                 return
             try:
                 cap.capture_start(args.source, args.sink, args.buffer)
-                print(f"Capture started successfully: {args.source} -> {args.sink}")
-            except Exception as e:
-                print(f"Capture start failed: {str(e)}")
+                print("Capture started successfully")
+            except Exception:
+                print("Capture start failed")
         elif args.action == "stop":
             if cap.capture_stop():
                 print("Capture stopped and hardware deactivated.")
@@ -88,7 +87,7 @@ def main():
         elif args.action == "status":
             stat = cap.status()
             if stat["capturing"]:
-                print(f"Capture ACTIVE: {' -> '.join(stat['path'])}")
+                print("Capture ACTIVE: " + " -> ".join(stat["path"]))
             else:
                 print("Capture IDLE")
 
